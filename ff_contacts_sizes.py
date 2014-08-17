@@ -128,7 +128,7 @@ parser.add_argument('-x', nargs=1, dest='xtcfilename', default=['no'], help=argp
 parser.add_argument('-o', nargs=1, dest='output_folder', default=['no'], help=argparse.SUPPRESS)
 parser.add_argument('-b', nargs=1, dest='t_start', default=[-1], type=int, help=argparse.SUPPRESS)
 parser.add_argument('-e', nargs=1, dest='t_end', default=[10000000000000], type=int, help=argparse.SUPPRESS)
-parser.add_argument('-t', nargs=1, dest='frames_dt', default=[10], type=int, help=argparse.SUPPRESS)
+parser.add_argument('-t', nargs=1, dest='frames_dt', default=[1], type=int, help=argparse.SUPPRESS)
 
 #lipids identification options
 parser.add_argument('--beads', nargs=1, dest='beadsfilename', default=['no'], help=argparse.SUPPRESS)
@@ -137,7 +137,7 @@ parser.add_argument('--leaflets', nargs=1, dest='cutoff_leaflet', default=['opti
 
 #protein options
 parser.add_argument('--algorithm', dest='m_algorithm', choices=['min'], default='min', help=argparse.SUPPRESS)
-parser.add_argument('--proteins', nargs=1, dest='selection_file_prot', default=['no'], help=argparse.SUPPRESS)
+parser.add_argument('--proteins', nargs=1, dest='selection_file_prot', default=['auto'], help=argparse.SUPPRESS)
 parser.add_argument('--pp_cutoff', nargs=1, dest='cutoff_pp', default=[8], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--pl_cutoff', nargs=1, dest='cutoff_pl', default=[6], type=float, help=argparse.SUPPRESS)
 
@@ -155,6 +155,7 @@ args = parser.parse_args()
 #data options
 args.grofilename = args.grofilename[0]
 args.xtcfilename = args.xtcfilename[0]
+args.output_folder = args.output_folder[0]
 args.t_start = args.t_start[0]
 args.t_end = args.t_end[0]
 args.frames_dt = args.frames_dt[0]
@@ -239,11 +240,15 @@ except:
 #=========================================================================================
 # sanity check
 #=========================================================================================
+
 if not os.path.isfile(args.grofilename):
 	print "Error: file " + str(args.grofilename) + " not found."
 	sys.exit(1)
 if args.selection_file_ff != "no" and not os.path.isfile(args.selection_file_ff):
 	print "Error: file " + str(args.selection_file_ff) + " not found."
+	sys.exit(1)
+if args.selection_file_prot != "auto" and not os.path.isfile(args.selection_file_prot):
+	print "Error: file " + str(args.selection_file_prot) + " not found."
 	sys.exit(1)
 if args.beadsfilename != "no" and not os.path.isfile(args.beadsfilename):
 	print "Error: file " + str(args.beadsfilename) + " not found."
@@ -274,6 +279,7 @@ elif not os.path.isfile(args.xtcfilename):
 #=========================================================================================
 if args.output_folder == "no":
 	args.output_folder = "ff_ctct_size_" + args.xtcfilename[:-4]
+
 if os.path.isdir(args.output_folder):
 	print "Error: folder " + str(args.output_folder) + " already exists, choose a different output name via -o."
 	sys.exit(1)
@@ -316,7 +322,7 @@ def set_lipids_beads():
 	#set default beads
 	leaflet_beads = {}
 	leaflet_beads['martini'] = "name PO4 or name PO3 or name B1A"
-	leaflet_sele_string = leaflet_beads[args.forcefield_opt]
+	leaflet_sele_string = leaflet_beads['martini']
 
 	#use users input
 	if args.beadsfilename != "no":
@@ -430,7 +436,7 @@ def identify_ff():
 			line = line[:-1]
 		try:
 			line_content = line.split(',')
-			if len(line_content) != 4:
+			if len(line_content) != 6:
 				print "Error: wrong format for line " + str(l_index+1) + " in " + str(args.selection_file_ff) + ", see note 4 in bilayer_perturbations --help."
 				print " ->", line
 				sys.exit(1)
@@ -439,8 +445,8 @@ def identify_ff():
 			lip_resnum = int(line_content[1])
 			lip_leaflet = line_content[2]
 			lip_bead = line_content[3]
-			lip_tstart = line_content[4]
-			lip_tend = line_content[4]
+			lip_tstart = float(line_content[4])
+			lip_tend = float(line_content[5])
 			lipids_ff_info[l_index] = [lip_resname,lip_resnum,lip_leaflet,lip_bead,lip_tstart,lip_tend]
 						
 			#update: starting leaflets
@@ -467,7 +473,7 @@ def identify_ff():
 				leaflet_sele_string+=" or (resname " + str(lip_resname) + " and resnum " + str(lip_resnum) + ")"
 
 			#create selections
-			lipids_sele_ff[l_index] = U.selectAtoms("resname " + str(lip_resname) + " and resnum " + str(lip_resnum))
+			lipids_sele_ff[l_index] = U.selectAtoms("resname " + str(lip_resname) + " and resnum " + str(lip_resnum) + " and name " + str(lipids_ff_info[l_index][3]))
 			lipids_sele_ff_bead[l_index] = lipids_sele_ff[l_index].selectAtoms("name " + str(lip_bead))
 			lipids_sele_ff_VMD_string[l_index]="resname " + str(lipids_ff_info[l_index][0]) + " and resid " + str(lipids_ff_info[l_index][1])
 			if lipids_sele_ff[l_index].numberOfAtoms() == 0:
@@ -666,11 +672,16 @@ def data_ff_contacts():
 	global lipids_ff_contacts_outside_nb
 	global lipids_ff_contacts_during_pc
 	global lipids_ff_contacts_outside_pc
+	lipids_ff_contacts_during_nb = {}
+	lipids_ff_contacts_outside_nb = {}
+	lipids_ff_contacts_during_pc = {}
+	lipids_ff_contacts_outside_pc = {}
 	
-	lipids_ff_contacts_during_nb = np.zeros((lipids_ff_nb,proteins_nb))
-	lipids_ff_contacts_outside_nb = np.zeros((lipids_ff_nb,proteins_nb))	
-	lipids_ff_contacts_during_pc = np.zeros((lipids_ff_nb,proteins_nb))
-	lipids_ff_contacts_outside_pc = np.zeros((lipids_ff_nb,proteins_nb))	
+	for l_index in range(0,lipids_ff_nb):
+		lipids_ff_contacts_during_nb[l_index] = np.zeros(proteins_nb)
+		lipids_ff_contacts_outside_nb[l_index] = np.zeros(proteins_nb)
+		lipids_ff_contacts_during_pc[l_index] = np.zeros(proteins_nb)
+		lipids_ff_contacts_outside_pc[l_index] = np.zeros(proteins_nb)
 		
 	return
 
@@ -738,12 +749,14 @@ def detect_clusters_connectivity(dist, box_dim):
 	return groups
 def identify_ff_contacts(box_dim, f_time):
 
+	global lipids_ff_contacts_during_nb
+	global lipids_ff_contacts_outside_nb
 	
 	#initialise dictionary allowing to retrieve cluster size
 	dict_protatoms_2_clustersize = {}
 	
 	#retrieve coordinates arrays (pre-processing saves time as MDAnalysis functions are quite slow and we need to make such calls a few times)
-	tmp_lip_coords = {l: leaflet_sele[l]["all species"].coordinates() for l in ["lower","upper"]
+	tmp_lip_coords = {l: leaflet_sele[l]["all species"].coordinates() for l in ["lower","upper"]}
 	
 	#identify clusters
 	#=================
@@ -759,8 +772,8 @@ def identify_ff_contacts(box_dim, f_time):
 			c_sele += proteins_sele[p_index]
 		c_sele_all += c_sele
 		tmp_c_sele_coordinates = c_sele.coordinates()
-		dist_min_lower = np.min(MDAnalysis.analysis.distances.distance_array(tmp_c_sele_coordinates, tmp_lip_coords["lower"]["all species"], box_dim), axis = 1)
-		dist_min_upper = np.min(MDAnalysis.analysis.distances.distance_array(tmp_c_sele_coordinates, tmp_lip_coords["upper"]["all species"], box_dim), axis = 1)
+		dist_min_lower = np.min(MDAnalysis.analysis.distances.distance_array(tmp_c_sele_coordinates, tmp_lip_coords["lower"], box_dim), axis = 1)
+		dist_min_upper = np.min(MDAnalysis.analysis.distances.distance_array(tmp_c_sele_coordinates, tmp_lip_coords["upper"], box_dim), axis = 1)
 		dist = dist_min_upper - dist_min_lower
 		#store size of TM cluster
 		if np.size(dist[dist>0]) != np.size(dist) and np.size(dist[dist>0]) !=0:
@@ -771,26 +784,26 @@ def identify_ff_contacts(box_dim, f_time):
 		else:
 			for a in c_sele.atoms:
 				dict_protatoms_2_clustersize[a.number] = -1
-			
+				
 	#process each ff lipid
 	#=====================
 	for l_index in range(0,lipids_ff_nb):
 		#detect contacts
-		ff_lip_and_prot_TM = lipidS_sele_ff[l_index] + c_sele_all
-		around_lip_prot_TM = ff_lip_and_prot_TM.selectAtoms("around " + str(cutoff_pl) + " (resname " + str(lipids_ff_info[l_index][0]) + " and resid " + str(lipids_ff_info[l_index][1]) + ")")	
+		ff_lip_and_prot_TM = lipids_sele_ff[l_index] + c_sele_all
+		around_lip_prot_TM = ff_lip_and_prot_TM.selectAtoms("around " + str(args.cutoff_pl) + " (resname " + str(lipids_ff_info[l_index][0]) + " and resid " + str(lipids_ff_info[l_index][1]) + ")")	
 		
 		#get size of cluster in contact if any
-		if around_lip_prot_TM.numberOfAtoms() > 0:
+		if around_lip_prot_TM.numberOfAtoms() > 0:			
 			tmp_size = dict_protatoms_2_clustersize[around_lip_prot_TM.atoms[0].number]
 			tmp_nbct = around_lip_prot_TM.numberOfAtoms()
-			
-		#store it if TM
-		if tmp_size > 0:
-			if f_time < lipids_ff_info[l_index][4] or f_time > lipids_ff_info[l_index][5]:
-				lipids_ff_contacts_outside_pc[l_index,tmp_size - 1] += tmp_nbct
-			else:
-				lipids_ff_contacts_during_nb[l_index,tmp_size - 1] += tmp_nbct
-				
+						
+			#store it if TM
+			if tmp_size > 0:
+				if f_time < lipids_ff_info[l_index][4] or f_time > lipids_ff_info[l_index][5]:
+					lipids_ff_contacts_outside_nb[l_index][tmp_size - 1] += tmp_nbct
+				else:
+					lipids_ff_contacts_during_nb[l_index][tmp_size - 1] += tmp_nbct
+						
 	return
 
 #=========================================================================================
@@ -800,8 +813,9 @@ def identify_ff_contacts(box_dim, f_time):
 def write_xvg():
 	
 	for l_index in lipids_ff_u2l_index:
-		filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '_u2l_' + str(lipids_ff_info[l_index][0]) + "_" + str(lipids_ff_info[l_index][1]) + '.xvg'
+		filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/u2l_' + str(lipids_ff_info[l_index][0]) + "_" + str(lipids_ff_info[l_index][1]) + '.xvg'
 		output_xvg = open(filename_xvg, 'w')
+		output_xvg.write("# [ff_contacts_sizes v" + str(version_nb) + "]\n")
 		output_xvg.write("@ title \"Evolution of bilayer thickness by lipid specie\"\n")
 		output_xvg.write("@ xaxis label \"cluster size\"\n")
 		output_xvg.write("@ yaxis label \"% of contacts\"\n")
@@ -825,18 +839,19 @@ def write_xvg():
 		#before/after
 		results = "0"
 		for c in range(0,9):
-			results += "	" + str(round(lipids_ff_contacts_outside_pc[l_index,c],2))
+			results += "	" + str(round(lipids_ff_contacts_outside_pc[l_index][c],2))
 		output_xvg.write(results + "\n")
 		#during
 		results = "1"
 		for c in range(0,9):
-			results += "	" + str(round(lipids_ff_contacts_during_pc[l_index,c],2))
+			results += "	" + str(round(lipids_ff_contacts_during_pc[l_index][c],2))
 		output_xvg.write(results + "\n")
 		output_xvg.close()
 
-	for l_index in lipids_ff_l2u_index:	
-		filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '_l2u_' + str(lipids_ff_info[l_index][0]) + "_" + str(lipids_ff_info[l_index][1]) + '.xvg'
+	for l_index in lipids_ff_l2u_index:		
+		filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/l2u_' + str(lipids_ff_info[l_index][0]) + "_" + str(lipids_ff_info[l_index][1]) + '.xvg'
 		output_xvg = open(filename_xvg, 'w')
+		output_xvg.write("# [ff_contacts_sizes v" + str(version_nb) + "]\n")
 		output_xvg.write("@ title \"Evolution of bilayer thickness by lipid specie\"\n")
 		output_xvg.write("@ xaxis label \"cluster size\"\n")
 		output_xvg.write("@ yaxis label \"% of contacts\"\n")
@@ -860,12 +875,12 @@ def write_xvg():
 		#before/after
 		results = "0"
 		for c in range(0,9):
-			results += "	" + str(round(lipids_ff_contacts_outside_pc[l_index,c],2))
+			results += "	" + str(round(lipids_ff_contacts_outside_pc[l_index][c],2))
 		output_xvg.write(results + "\n")
 		#during
 		results = "1"
 		for c in range(0,9):
-			results += "	" + str(round(lipids_ff_contacts_during_pc[l_index,c],2))
+			results += "	" + str(round(lipids_ff_contacts_during_pc[l_index][c],2))
 		output_xvg.write(results + "\n")
 		output_xvg.close()
 
@@ -883,57 +898,46 @@ set_lipids_beads()
 load_MDA_universe()
 if args.selection_file_ff != "no":
 	identify_ff()
-if args.selection_file_prot != "no":
-	identify_proteins()
+identify_proteins()
 identify_leaflets()
 
 #create data structures
 print "\nInitialising data structures..."
 data_struct_time()
+data_ff_contacts()
 
 #=========================================================================================
 # generate data
 #=========================================================================================
 print "\nCalculating sizes sampled by flip-flopping lipids..."
 
-#case: gro file
-#==============
-if args.xtcfilename == "no":
-	frames_nb[0] = 1
-	frames_time[0] = 0
+for f_index in range(0,nb_frames_to_process):
+	ts = U.trajectory[frames_to_process[f_index]]
+	if ts.time/float(1000) > args.t_end:
+		break
+	progress = '\r -processing frame ' + str(ts.frame) + '/' + str(nb_frames_xtc) + '                      '  
+	sys.stdout.flush()
+	sys.stdout.write(progress)
+			
+	#frame properties
+	f_time = ts.time/float(1000)
+	f_nb = ts.frame
+	frames_nb[f_index] = f_nb
+	frames_time[f_index] = f_time
 	box_dim = U.trajectory.ts.dimensions
-
-
-#case: xtc file
-#==============
-else:
-	for f_index in range(0,nb_frames_to_process):
-		ts = U.trajectory[frames_to_process[f_index]]
-		if ts.time/float(1000) > args.t_end:
-			break
-		progress = '\r -processing frame ' + str(ts.frame) + '/' + str(nb_frames_xtc) + '                      '  
-		sys.stdout.flush()
-		sys.stdout.write(progress)
-				
-		#frame properties
-		f_time = ts.time/float(1000)
-		f_nb = ts.frame
-		frames_nb[f_index] = f_nb
-		frames_time[f_index] = f_time
-		box_dim = U.trajectory.ts.dimensions
-		
-		#process ff lipids
-		identify_ff_contacts(box_dim, f_time)
-		
-	print ''
+	
+	#process ff lipids
+	identify_ff_contacts(box_dim, f_time)
+	
+print ''
 
 #=========================================================================================
 # process data
 #=========================================================================================
 print "\nCalculating statistics..."
 for l_index in range(0,lipids_ff_nb):
-	lipids_ff_contacts_during_pc[l_index,:] = lipids_ff_contacts_during_nb[l_index,:] / float(np.sum(lipids_ff_contacts_during_nb[l_index,:])) * 100
-	lipids_ff_contacts_outside_pc[l_index,:] = lipids_ff_contacts_outside_nb[l_index,:] / float(np.sum(lipids_ff_contacts_outside_nb[l_index,:])) * 100
+	lipids_ff_contacts_during_pc[l_index] = lipids_ff_contacts_during_nb[l_index] *100 / float(np.sum(lipids_ff_contacts_during_nb[l_index]))
+	lipids_ff_contacts_outside_pc[l_index] = lipids_ff_contacts_outside_nb[l_index] *100 / float(np.sum(lipids_ff_contacts_outside_nb[l_index]))
 		
 #=========================================================================================
 # produce outputs
