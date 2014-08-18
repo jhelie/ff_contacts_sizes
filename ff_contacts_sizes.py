@@ -864,14 +864,14 @@ def write_xvg():
 		output_xvg.write("@ legend 0.98, 0.8\n")
 		output_xvg.write("@ legend length 9\n")
 		output_xvg.write("@ s0 legend \"1\"\n")
-		output_xvg.write("@ s0 legend \"2\"\n")
-		output_xvg.write("@ s0 legend \"3\"\n")
-		output_xvg.write("@ s0 legend \"4\"\n")
-		output_xvg.write("@ s0 legend \"5\"\n")
-		output_xvg.write("@ s0 legend \"6\"\n")
-		output_xvg.write("@ s0 legend \"7\"\n")
-		output_xvg.write("@ s0 legend \"8\"\n")
-		output_xvg.write("@ s0 legend \"9\"\n")
+		output_xvg.write("@ s1 legend \"2\"\n")
+		output_xvg.write("@ s2 legend \"3\"\n")
+		output_xvg.write("@ s3 legend \"4\"\n")
+		output_xvg.write("@ s4 legend \"5\"\n")
+		output_xvg.write("@ s5 legend \"6\"\n")
+		output_xvg.write("@ s6 legend \"7\"\n")
+		output_xvg.write("@ s7 legend \"8\"\n")
+		output_xvg.write("@ s8 legend \"9\"\n")
 		#before/after
 		results = "0"
 		for c in range(0,9):
