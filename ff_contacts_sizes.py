@@ -816,6 +816,11 @@ def write_xvg():
 		filename_xvg = os.getcwd() + '/' + str(args.output_folder) + '/u2l_' + str(lipids_ff_info[l_index][0]) + "_" + str(lipids_ff_info[l_index][1]) + '.xvg'
 		output_xvg = open(filename_xvg, 'w')
 		output_xvg.write("# [ff_contacts_sizes v" + str(version_nb) + "]\n")
+		output_xvg.write("# The data is organised as follows:\n")
+		output_xvg.write("#  -1st line: distribution (%) of contacts before/after flipflop\n")
+		output_xvg.write("#  -2nd line: distribution (%) of contacts during flipflop\n")
+		output_xvg.write("#  -3rd line: distribution (nb) of contacts before/after flipflop\n")
+		output_xvg.write("#  -4th line: distribution (nb) of contacts during flipflop\n")
 		output_xvg.write("@ title \"Evolution of bilayer thickness by lipid specie\"\n")
 		output_xvg.write("@ xaxis label \"cluster size\"\n")
 		output_xvg.write("@ yaxis label \"% of contacts\"\n")
@@ -836,6 +841,8 @@ def write_xvg():
 		output_xvg.write("@ s6 legend \"7\"\n")
 		output_xvg.write("@ s7 legend \"8\"\n")
 		output_xvg.write("@ s8 legend \"9\"\n")
+		#distribution: %
+		#---------------
 		#before/after
 		results = "0"
 		for c in range(0,9):
@@ -845,6 +852,18 @@ def write_xvg():
 		results = "1"
 		for c in range(0,9):
 			results += "	" + str(round(lipids_ff_contacts_during_pc[l_index][c],2))
+		output_xvg.write(results + "\n")
+		#distribution: nb
+		#---------------
+		#before/after
+		results = "0"
+		for c in range(0,9):
+			results += "	" + str(round(lipids_ff_contacts_outside_nb[l_index][c],2))
+		output_xvg.write(results + "\n")
+		#during
+		results = "1"
+		for c in range(0,9):
+			results += "	" + str(round(lipids_ff_contacts_during_nb[l_index][c],2))
 		output_xvg.write(results + "\n")
 		output_xvg.close()
 
@@ -853,6 +872,10 @@ def write_xvg():
 		output_xvg = open(filename_xvg, 'w')
 		output_xvg.write("# [ff_contacts_sizes v" + str(version_nb) + "]\n")
 		output_xvg.write("@ title \"Evolution of bilayer thickness by lipid specie\"\n")
+		output_xvg.write("#  -1st line: distribution (%) of contacts before/after flipflop\n")
+		output_xvg.write("#  -2nd line: distribution (%) of contacts during flipflop\n")
+		output_xvg.write("#  -3rd line: distribution (nb) of contacts before/after flipflop\n")
+		output_xvg.write("#  -4th line: distribution (nb) of contacts during flipflop\n")
 		output_xvg.write("@ xaxis label \"cluster size\"\n")
 		output_xvg.write("@ yaxis label \"% of contacts\"\n")
 		output_xvg.write("@ autoscale ONREAD xaxes\n")
@@ -872,6 +895,8 @@ def write_xvg():
 		output_xvg.write("@ s6 legend \"7\"\n")
 		output_xvg.write("@ s7 legend \"8\"\n")
 		output_xvg.write("@ s8 legend \"9\"\n")
+		#distribution: %
+		#---------------
 		#before/after
 		results = "0"
 		for c in range(0,9):
@@ -881,6 +906,18 @@ def write_xvg():
 		results = "1"
 		for c in range(0,9):
 			results += "	" + str(round(lipids_ff_contacts_during_pc[l_index][c],2))
+		output_xvg.write(results + "\n")
+		#distribution: nb
+		#----------------
+		#before/after
+		results = "0"
+		for c in range(0,9):
+			results += "	" + str(round(lipids_ff_contacts_outside_nb[l_index][c],2))
+		output_xvg.write(results + "\n")
+		#during
+		results = "1"
+		for c in range(0,9):
+			results += "	" + str(round(lipids_ff_contacts_during_nb[l_index][c],2))
 		output_xvg.write(results + "\n")
 		output_xvg.close()
 
