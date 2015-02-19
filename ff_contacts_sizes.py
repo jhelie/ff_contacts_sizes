@@ -35,8 +35,8 @@ Each line of this file should follow the format:
 
  -> 'resname,resid,starting_leaflet,z_bead,t_start,t_end'
 
-where starting_leaflet is either 'upper' or 'lower' - e.g. 'POPC,145,lower,PO4'. The
-'z_bead' particle is used to track the position of the lipid.
+where starting_leaflet is either 'upper' or 'lower' - e.g. 'POPC,145,lower,PO4,150,500'.
+The 'z_bead' particle is used to track the position of the lipid.
 
 
 [ REQUIREMENTS ]
