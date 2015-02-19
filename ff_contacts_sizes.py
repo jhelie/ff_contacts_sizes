@@ -33,7 +33,7 @@ lipid headgroup neighbours to the cluster particles are all within the same leaf
 A file listing the flip-flopping lipids must be supplied with the --flipflops option.
 Each line of this file should follow the format:
 
- -> 'resname,resid,starting_leaflet,z_bead'
+ -> 'resname,resid,starting_leaflet,z_bead,t_start,t_end'
 
 where starting_leaflet is either 'upper' or 'lower' - e.g. 'POPC,145,lower,PO4'. The
 'z_bead' particle is used to track the position of the lipid.
