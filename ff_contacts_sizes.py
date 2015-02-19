@@ -31,7 +31,7 @@ The identified protein clusters are considered to be transmembrane only if the c
 lipid headgroup neighbours to the cluster particles are all within the same leaflet.
 
 A file listing the flip-flopping lipids must be supplied with the --flipflops option.
-Each line of this file should follow the format:
+Each line of this file should follow the format (time in ns):
 
  -> 'resname,resid,starting_leaflet,z_bead,t_start,t_end'
 
