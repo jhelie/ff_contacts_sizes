@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb="0.0.1"
+version_nb="0.0.2"
 parser = argparse.ArgumentParser(prog='ff_contacts_sizes', usage='', add_help=False, formatter_class=argparse.RawDescriptionHelpFormatter, description=\
 '''
 ************************************************
@@ -97,7 +97,7 @@ The following python modules are needed :
 Option	      Default  	Description                    
 -----------------------------------------------------
 -f			: structure file [.gro] (required)
--x			: trajectory file [.xtc]
+-x			: trajectory file [.xtc] (required)
 -o			: name of output folder
 -b			: beginning time (ns) (the bilayer must exist by then!)
 -e			: ending time (ns)	
@@ -112,7 +112,7 @@ Lipids identification
 Protein clusters identification and contacts
 -----------------------------------------------------
 --proteins		: protein selection file, (optional, see note 6)
---pp_cutoff 	8	: cutoff distance for protein-protein contact (Angstrom)
+--pp_cutoff 	6	: cutoff distance for protein-protein contact (Angstrom)
 --pl_cutoff 	6	: cutoff distance for protein-lipid contact (Angstrom)
  
 Other options
@@ -138,7 +138,7 @@ parser.add_argument('--leaflets', nargs=1, dest='cutoff_leaflet', default=['opti
 #protein options
 parser.add_argument('--algorithm', dest='m_algorithm', choices=['min'], default='min', help=argparse.SUPPRESS)
 parser.add_argument('--proteins', nargs=1, dest='selection_file_prot', default=['auto'], help=argparse.SUPPRESS)
-parser.add_argument('--pp_cutoff', nargs=1, dest='cutoff_pp', default=[8], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--pp_cutoff', nargs=1, dest='cutoff_pp', default=[6], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--pl_cutoff', nargs=1, dest='cutoff_pl', default=[6], type=float, help=argparse.SUPPRESS)
 
 #other options
