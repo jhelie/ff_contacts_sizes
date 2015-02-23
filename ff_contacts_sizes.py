@@ -447,6 +447,8 @@ def identify_ff():
 			lip_bead = line_content[3]
 			lip_tstart = float(line_content[4])
 			lip_tend = float(line_content[5])
+			if lip_tend == 0:
+				lip_tend = U.trajectory.totaltime/float(1000)			#this is to handle lipids which haven't finished flip-flopping
 			lipids_ff_info[l_index] = [lip_resname,lip_resnum,lip_leaflet,lip_bead,lip_tstart,lip_tend]
 						
 			#update: starting leaflets
